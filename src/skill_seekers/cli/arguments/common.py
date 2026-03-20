@@ -72,7 +72,7 @@ COMMON_ARGUMENTS: dict[str, dict[str, Any]] = {
         "flags": ("--model",),
         "kwargs": {
             "type": str,
-            "help": "Model name for AI enhancement (overrides SKILL_SEEKERS_MODEL env var, default: glm-5)",
+            "help": "Model name for AI enhancement (overrides SKILL_SEEKERS_MODEL env var, default: claude-sonnet-4-20250514)",
             "metavar": "MODEL",
         },
     },
