@@ -26,6 +26,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
+from skill_seekers.cli.constants import get_model
 
 logger = logging.getLogger(__name__)
 
@@ -279,11 +280,16 @@ class UnifiedEnhancer:
 
         try:
             response = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model=get_model(),
                 max_tokens=max_tokens,
                 messages=[{"role": "user", "content": prompt}],
             )
-            return response.content[0].text
+            text = next((b.text for b in response.content if hasattr(b, "text")), "")
+            import re as _re
+            text = _re.sub(r"^```(?:json)?\s*\n?", "", text.strip())
+            text = _re.sub(r"\n?```\s*$", "", text)
+            text = _re.sub(r":\s*\+(\d)", r": \1", text)
+            return text.strip()
         except Exception as e:
             logger.warning(f"⚠️  API call failed: {e}")
             return None

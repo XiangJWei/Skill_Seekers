@@ -30,6 +30,7 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
+from skill_seekers.cli.constants import get_model, get_language_instruction
 
 logger = logging.getLogger(__name__)
 
@@ -149,12 +150,23 @@ class AIEnhancer:
             return None
 
         try:
+            import time as _time
+            _t0 = _time.time()
             response = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model=get_model(),
                 max_tokens=max_tokens,
                 messages=[{"role": "user", "content": prompt}],
             )
-            return response.content[0].text
+            _elapsed = _time.time() - _t0
+            logger.warning(f"⏱️  API call took {_elapsed:.1f}s | input_tokens={getattr(response.usage, 'input_tokens', '?')} output_tokens={getattr(response.usage, 'output_tokens', '?')}")
+            text = next((b.text for b in response.content if hasattr(b, "text")), "")
+            # Strip markdown code fences if present
+            import re as _re
+            text = _re.sub(r"^```(?:json)?\s*\n?", "", text.strip())
+            text = _re.sub(r"\n?```\s*$", "", text)
+            # Fix invalid JSON: +0.x is not valid JSON, remove leading +
+            text = _re.sub(r":\s*\+(\d)", r": \1", text)
+            return text.strip()
         except Exception as e:
             logger.warning(f"⚠️  AI API call failed: {e}")
             return None
@@ -271,14 +283,19 @@ class PatternEnhancer(AIEnhancer):
         for i in range(0, len(patterns), batch_size):
             batches.append(patterns[i : i + batch_size])
 
+        total_batches = len(batches)
+        logger.warning(f"📦 Total batches: {total_batches} (batch_size={batch_size})")
+
         # Process batches (parallel for LOCAL, sequential for API)
         if parallel_workers > 1 and len(batches) > 1:
             enhanced = self._enhance_patterns_parallel(batches, parallel_workers)
         else:
             enhanced = []
-            for batch in batches:
+            for i, batch in enumerate(batches, 1):
+                logger.warning(f"⏳ Processing batch {i}/{total_batches} ({len(enhanced)}/{len(patterns)} patterns done)...")
                 batch_results = self._enhance_pattern_batch(batch)
                 enhanced.extend(batch_results)
+                logger.warning(f"✓ Batch {i}/{total_batches} done")
 
         logger.info(f"✅ Enhanced {len(enhanced)} patterns")
         return enhanced
@@ -337,6 +354,7 @@ For EACH pattern, provide (in JSON format):
 5. "confidence_boost": Confidence adjustment from -0.2 to +0.2 based on evidence quality
 
 Format as JSON array matching input order. Be concise and actionable.
+{get_language_instruction()}
 """
 
         response = self._call_claude(prompt, max_tokens=2000)
@@ -477,6 +495,7 @@ For EACH example, provide (in JSON format):
 5. "tutorial_group": Suggested tutorial category (e.g., "User Authentication", "Database Operations")
 
 Format as JSON array matching input order. Focus on educational value.
+{get_language_instruction()}
 """
 
         response = self._call_claude(prompt, max_tokens=2000)

@@ -39,6 +39,7 @@ from skill_seekers.cli.config_extractor import ConfigExtractor
 from skill_seekers.cli.dependency_analyzer import DependencyAnalyzer
 from skill_seekers.cli.signal_flow_analyzer import SignalFlowAnalyzer
 from skill_seekers.cli.utils import setup_logging
+from skill_seekers.cli.constants import get_model
 
 # Try to import pathspec for .gitignore support
 try:
@@ -956,14 +957,14 @@ Return JSON with format:
 {{"enhancements": [{{"filename": "...", "description": "...", "key_topics": [...], "related_to": [...]}}]}}"""
 
             response = client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model=get_model(),
                 max_tokens=2000,
                 messages=[{"role": "user", "content": prompt}],
             )
 
             # Parse response and merge enhancements
             try:
-                json_match = re.search(r"\{.*\}", response.content[0].text, re.DOTALL)
+                json_match = re.search(r"\{.*\}", next((b.text for b in response.content if hasattr(b, "text")), ""), re.DOTALL)
                 if json_match:
                     enhancements = json.loads(json_match.group())
                     for enh in enhancements.get("enhancements", []):
@@ -2425,6 +2426,14 @@ Examples:
     if not directory.is_dir():
         logger.error(f"Not a directory: {directory}")
         return 1
+
+    # Apply --model / --language args to env vars so all enhancers pick them up
+    model = getattr(args, "model", None)
+    if model:
+        os.environ["SKILL_SEEKERS_MODEL"] = model
+    language = getattr(args, "lang", None)
+    if language:
+        os.environ["SKILL_SEEKERS_LANGUAGE"] = language
 
     # Parse languages
     languages = None

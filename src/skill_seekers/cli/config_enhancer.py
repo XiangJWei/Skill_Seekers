@@ -20,6 +20,7 @@ import sys
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
+from skill_seekers.cli.constants import get_model, get_language_instruction
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")
@@ -142,13 +143,13 @@ class ConfigEnhancer:
             # Call Claude API
             logger.info("📡 Calling Claude API for config analysis...")
             response = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model=get_model(),
                 max_tokens=8000,
                 messages=[{"role": "user", "content": prompt}],
             )
 
             # Parse response
-            enhanced_result = self._parse_api_response(response.content[0].text, result)
+            enhanced_result = self._parse_api_response(next((b.text for b in response.content if hasattr(b, "text")), ""), result)
             logger.info("✅ API enhancement complete")
             return enhanced_result
 
@@ -213,6 +214,7 @@ OUTPUT FORMAT (strict JSON):
 }}
 
 Focus on actionable insights that help developers understand and improve their configuration.
+{get_language_instruction()}
 """
         return prompt
 

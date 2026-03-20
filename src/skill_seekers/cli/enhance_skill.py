@@ -20,7 +20,7 @@ import os
 import sys
 from pathlib import Path
 
-from skill_seekers.cli.constants import API_CONTENT_LIMIT, API_PREVIEW_LIMIT
+from skill_seekers.cli.constants import API_CONTENT_LIMIT, API_PREVIEW_LIMIT, get_model
 from skill_seekers.cli.utils import read_reference_files
 
 try:
@@ -73,7 +73,7 @@ class SkillEnhancer:
 
         try:
             message = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model=get_model(),
                 max_tokens=4096,
                 temperature=0.3,
                 messages=[{"role": "user", "content": prompt}],

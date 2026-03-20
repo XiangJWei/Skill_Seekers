@@ -344,6 +344,10 @@ def _handle_analyze_command(args: argparse.Namespace) -> int:
         sys.argv.extend(["--description", args.description])
     if getattr(args, "api_key", None):
         sys.argv.extend(["--api-key", args.api_key])
+    if getattr(args, "model", None):
+        sys.argv.extend(["--model", args.model])
+    if getattr(args, "lang", None):
+        sys.argv.extend(["--lang", args.lang])
     # Enhancement Workflow arguments
     if getattr(args, "enhance_workflow", None):
         for wf in args.enhance_workflow:

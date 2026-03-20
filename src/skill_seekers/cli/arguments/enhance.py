@@ -43,6 +43,22 @@ ENHANCE_ARGUMENTS: dict[str, dict[str, Any]] = {
             "metavar": "KEY",
         },
     },
+    "model": {
+        "flags": ("--model",),
+        "kwargs": {
+            "type": str,
+            "help": "Model name to use for AI enhancement (overrides SKILL_SEEKERS_MODEL env var, default: glm-5)",
+            "metavar": "MODEL",
+        },
+    },
+    "lang": {
+        "flags": ("--lang",),
+        "kwargs": {
+            "type": str,
+            "help": "Output language for AI enhancement, e.g. zh-CN for Simplified Chinese (overrides SKILL_SEEKERS_LANGUAGE env var, default: en)",
+            "metavar": "LANG",
+        },
+    },
     "dry_run": {
         "flags": ("--dry-run",),
         "kwargs": {

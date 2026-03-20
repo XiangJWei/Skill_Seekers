@@ -13,6 +13,7 @@ from typing import Any
 
 from .base import SkillAdaptor, SkillMetadata
 from skill_seekers.cli.arguments.common import DEFAULT_CHUNK_TOKENS, DEFAULT_CHUNK_OVERLAP_TOKENS
+from skill_seekers.cli.constants import get_model, get_language_instruction
 
 
 class ClaudeAdaptor(SkillAdaptor):
@@ -378,13 +379,13 @@ version: {metadata.version}
             client = anthropic.Anthropic(**client_kwargs)
 
             message = client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model=get_model(),
                 max_tokens=4096,
                 temperature=0.3,
                 messages=[{"role": "user", "content": prompt}],
             )
 
-            enhanced_content = message.content[0].text
+            enhanced_content = next((b.text for b in message.content if hasattr(b, "text")), "")
             print(f"  ✓ Generated enhanced SKILL.md ({len(enhanced_content)} chars)\n")
 
             # Backup original
@@ -422,8 +423,8 @@ version: {metadata.version}
         references = {}
         total_chars = 0
 
-        # Read all .md files
-        for ref_file in sorted(references_dir.glob("*.md")):
+        # Read all .md files (recursive to handle subdirectories like api_reference/, patterns/)
+        for ref_file in sorted(references_dir.rglob("*.md")):
             if total_chars >= max_chars:
                 break
 
@@ -496,6 +497,7 @@ IMPORTANT:
 
 OUTPUT:
 Return ONLY the complete SKILL.md content, starting with the frontmatter (---).
+{get_language_instruction()}
 """
 
         return prompt

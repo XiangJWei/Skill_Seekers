@@ -23,6 +23,7 @@ import sys
 import time
 
 from skill_seekers.cli.video_models import (
+from skill_seekers.cli.constants import get_model
     AudioVisualAlignment,
     TextGroupTimeline,
     TranscriptSource,
@@ -300,11 +301,11 @@ def _ai_clean_reference(ref_path: str, content: str, api_key: str | None = None)
     try:
         client = anthropic.Anthropic(**client_kwargs)
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model=get_model(),
             max_tokens=8000,
             messages=[{"role": "user", "content": prompt}],
         )
-        result = response.content[0].text
+        result = next((b.text for b in response.content if hasattr(b, "text")), "")
         if result and len(result) > len(content) * 0.5:
             with open(ref_path, "w", encoding="utf-8") as f:
                 f.write(result)

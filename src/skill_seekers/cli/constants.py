@@ -22,6 +22,40 @@ URL_MATCH_POINTS = 3  # points for URL keyword match
 TITLE_MATCH_POINTS = 2  # points for title keyword match
 CONTENT_MATCH_POINTS = 1  # points for content keyword match
 
+# ===== MODEL CONFIGURATION =====
+
+DEFAULT_MODEL = "claude-sonnet-4-20250514"  # fallback model name
+
+
+def get_language_instruction() -> str:
+    """Return a language instruction to append to AI prompts.
+
+    Reads SKILL_SEEKERS_LANGUAGE env var:
+      - "zh" or "zh-CN" → Simplified Chinese instruction
+      - anything else (or unset) → empty string (model defaults to English)
+    """
+    import os
+    lang = os.environ.get("SKILL_SEEKERS_LANGUAGE", "").strip().lower()
+    if lang in ("zh", "zh-cn"):
+        return (
+            "IMPORTANT: Respond entirely in Simplified Chinese (简体中文). "
+            "All text content must be in Chinese; only code, identifiers, "
+            "and technical names remain in their original language."
+        )
+    return ""
+
+
+def get_model() -> str:
+    """Return the active model name.
+
+    Resolution order:
+      1. SKILL_SEEKERS_MODEL env var (set by --model CLI arg)
+      2. DEFAULT_MODEL constant
+    """
+    import os
+    return os.environ.get("SKILL_SEEKERS_MODEL", DEFAULT_MODEL)
+
+
 # ===== ENHANCEMENT CONFIGURATION =====
 
 # API-based enhancement limits (uses Anthropic API)
@@ -47,6 +81,10 @@ MAX_CODE_BLOCKS_PER_PAGE = 5  # maximum code blocks to extract per page
 # ===== EXPORT CONSTANTS =====
 
 __all__ = [
+    # Model
+    "DEFAULT_MODEL",
+    "get_model",
+    "get_language_instruction",
     # Scraping
     "DEFAULT_RATE_LIMIT",
     "DEFAULT_MAX_PAGES",

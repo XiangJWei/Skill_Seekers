@@ -613,7 +613,7 @@ def _ocr_with_claude_vision(frame_path: str, frame_type: FrameType) -> tuple[str
             ],
         )
 
-        text = response.content[0].text.strip() if response.content else ""
+        text = next((b.text for b in response.content if hasattr(b, "text")), "").strip() if response.content else ""
         if text:
             return text, 0.95
         return "", 0.0

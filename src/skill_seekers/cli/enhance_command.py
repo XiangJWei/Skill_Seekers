@@ -217,6 +217,14 @@ Examples:
         print(f"❌ Error: Not a directory: {skill_dir}")
         return 1
 
+    # Apply --model / --language args to env vars so all enhancers pick them up
+    model = getattr(args, "model", None)
+    if model:
+        os.environ["SKILL_SEEKERS_MODEL"] = model
+    language = getattr(args, "lang", None)
+    if language:
+        os.environ["SKILL_SEEKERS_LANGUAGE"] = language
+
     mode, target = _pick_mode(args)
 
     # Dry run — just show what would happen

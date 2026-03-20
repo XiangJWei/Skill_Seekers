@@ -60,6 +60,7 @@ import contextlib
 
 from skill_seekers.cli.constants import LOCAL_CONTENT_LIMIT, LOCAL_PREVIEW_LIMIT
 from skill_seekers.cli.utils import read_reference_files
+from skill_seekers.cli.constants import get_language_instruction
 
 
 def detect_terminal_app():
@@ -598,7 +599,13 @@ IMPORTANT:
 - Make it actionable and practical
 - Keep the frontmatter (---\\nname: ...\\n---) intact
 - Use proper markdown formatting
+"""
 
+        lang_instruction = get_language_instruction()
+        if lang_instruction:
+            prompt += f"\n{lang_instruction}\n"
+
+        prompt += """
 SAVE THE RESULT:
 You MUST save the complete enhanced SKILL.md file.
 

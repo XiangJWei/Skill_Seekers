@@ -21,6 +21,7 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
+from skill_seekers.cli.constants import get_model, get_language_instruction
 
 # Avoid circular imports by using TYPE_CHECKING
 if TYPE_CHECKING:
@@ -363,11 +364,16 @@ class GuideEnhancer:
 
         try:
             response = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model=get_model(),
                 max_tokens=max_tokens,
                 messages=[{"role": "user", "content": prompt}],
             )
-            return response.content[0].text
+            text = next((b.text for b in response.content if hasattr(b, "text")), "")
+            import re as _re
+            text = _re.sub(r"^```(?:json)?\s*\n?", "", text.strip())
+            text = _re.sub(r"\n?```\s*$", "", text)
+            text = _re.sub(r":\s*\+(\d)", r": \1", text)
+            return text.strip()
         except Exception as e:
             logger.warning(f"⚠️  Claude API call failed: {e}")
             return None
@@ -536,6 +542,7 @@ OUTPUT FORMAT (strict JSON):
   ]
 }}
 
+{get_language_instruction()}
 IMPORTANT: Return ONLY valid JSON, no markdown code blocks or extra text.
 """
         return prompt
@@ -555,6 +562,7 @@ Return JSON:
   ]
 }}
 
+{get_language_instruction()}
 IMPORTANT: Return ONLY valid JSON.
 """
 
@@ -584,6 +592,7 @@ Return JSON with 3-5 common errors:
   ]
 }}
 
+{get_language_instruction()}
 IMPORTANT: Return ONLY valid JSON.
 """
 
@@ -602,6 +611,7 @@ Return JSON:
   ]
 }}
 
+{get_language_instruction()}
 IMPORTANT: Return ONLY valid JSON.
 """
 
@@ -619,6 +629,7 @@ Return JSON:
   ]
 }}
 
+{get_language_instruction()}
 IMPORTANT: Return ONLY valid JSON.
 """
 
@@ -641,6 +652,7 @@ Return JSON:
   ]
 }}
 
+{get_language_instruction()}
 IMPORTANT: Return ONLY valid JSON.
 """
 
