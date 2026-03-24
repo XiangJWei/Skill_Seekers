@@ -115,7 +115,7 @@ def detect_terminal_app():
 AGENT_PRESETS = {
     "claude": {
         "display_name": "Claude Code",
-        "command": ["claude", "{prompt_file}"],
+        "command": ["claude.cmd" if os.name == "nt" else "claude", "{prompt_file}"],
         "supports_skip_permissions": True,
     },
     "codex": {
@@ -267,6 +267,7 @@ class LocalSkillEnhancer:
                         cmd_parts,
                         capture_output=True,
                         text=True,
+                        encoding="utf-8",
                         timeout=timeout,
                         cwd=str(self.skill_dir),
                     ),
@@ -279,6 +280,7 @@ class LocalSkillEnhancer:
                     cmd_parts,
                     capture_output=True,
                     text=True,
+                    encoding="utf-8",
                     timeout=timeout,
                     cwd=str(self.skill_dir),
                     input=prompt_text,

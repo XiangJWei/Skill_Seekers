@@ -147,13 +147,19 @@ class GuideEnhancer:
 
     def _check_claude_cli(self) -> bool:
         """Check if Claude Code CLI is available."""
-        try:
-            result = subprocess.run(
-                ["claude", "--version"], capture_output=True, text=True, timeout=5
-            )
-            return result.returncode == 0
-        except (FileNotFoundError, subprocess.TimeoutExpired):
-            return False
+        candidates = ["claude", "claude.cmd"] if os.name == "nt" else ["claude"]
+        for cmd in candidates:
+            try:
+                result = subprocess.run(
+                    [cmd, "--version"], capture_output=True, text=True,
+                    encoding="utf-8", timeout=5
+                )
+                if result.returncode == 0:
+                    self._claude_cmd = cmd
+                    return True
+            except (FileNotFoundError, subprocess.TimeoutExpired):
+                continue
+        return False
 
     def enhance_guide(self, guide_data: dict) -> dict:
         """
@@ -390,15 +396,18 @@ class GuideEnhancer:
         """
         try:
             # Create temporary prompt file
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False,
+                                             encoding="utf-8") as f:
                 f.write(prompt)
                 prompt_file = f.name
 
             # Run claude CLI
+            _claude = getattr(self, "_claude_cmd", "claude.cmd" if os.name == "nt" else "claude")
             result = subprocess.run(
-                ["claude", prompt_file],
+                [_claude, prompt_file],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
                 timeout=300,  # 5 min timeout
             )
 

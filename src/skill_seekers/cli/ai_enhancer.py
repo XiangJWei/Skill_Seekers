@@ -74,6 +74,7 @@ class AIEnhancer:
         self.mode = mode
         self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
         self.client = None
+        self._claude_cmd = "claude.cmd" if os.name == "nt" else "claude"  # Windows default
 
         # Get settings from config (with defaults)
         if CONFIG_AVAILABLE:
@@ -125,16 +126,23 @@ class AIEnhancer:
 
     def _check_claude_cli(self) -> bool:
         """Check if Claude Code CLI is available"""
-        try:
-            result = subprocess.run(
-                ["claude", "--version"],
-                capture_output=True,
-                text=True,
-                timeout=5,
-            )
-            return result.returncode == 0
-        except (FileNotFoundError, subprocess.TimeoutExpired):
-            return False
+        # On Windows, claude is installed as claude.cmd, not a plain executable
+        candidates = ["claude", "claude.cmd"] if os.name == "nt" else ["claude"]
+        for cmd in candidates:
+            try:
+                result = subprocess.run(
+                    [cmd, "--version"],
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    timeout=5,
+                )
+                if result.returncode == 0:
+                    self._claude_cmd = cmd  # remember working command
+                    return True
+            except (FileNotFoundError, subprocess.TimeoutExpired):
+                continue
+        return False
 
     def _call_claude(self, prompt: str, max_tokens: int = 1000) -> str | None:
         """Call Claude (API or LOCAL mode) with error handling"""
@@ -201,13 +209,15 @@ IMPORTANT: You MUST write your response as valid JSON to this file:
 
 DO NOT include any explanation - just write the JSON file.
 """
-                prompt_file.write_text(full_prompt)
+                prompt_file.write_text(full_prompt, encoding="utf-8")
 
-                # Run Claude CLI
+                # Run Claude CLI (use remembered working command name)
+                claude_cmd = getattr(self, "_claude_cmd", "claude")
                 result = subprocess.run(
-                    ["claude", "--dangerously-skip-permissions", str(prompt_file)],
+                    [claude_cmd, "--dangerously-skip-permissions", str(prompt_file)],
                     capture_output=True,
                     text=True,
+                    encoding="utf-8",
                     timeout=120,  # 2 minute timeout per call
                     cwd=str(temp_path),
                 )
@@ -218,7 +228,7 @@ DO NOT include any explanation - just write the JSON file.
 
                 # Read output file
                 if output_file.exists():
-                    response_text = output_file.read_text()
+                    response_text = output_file.read_text(encoding="utf-8")
                     # Try to extract JSON from response
                     try:
                         # Validate it's valid JSON
@@ -237,7 +247,7 @@ DO NOT include any explanation - just write the JSON file.
                     # Look for any JSON file created
                     for json_file in temp_path.glob("*.json"):
                         if json_file.name != "prompt.json":
-                            return json_file.read_text()
+                            return json_file.read_text(encoding="utf-8")
                     logger.warning("⚠️  No output file from LOCAL mode")
                     return None
 

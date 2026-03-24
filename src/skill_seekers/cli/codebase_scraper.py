@@ -1017,10 +1017,12 @@ Output JSON only:
             f.write(prompt)
             prompt_file = f.name
 
+        _claude = "claude.cmd" if os.name == "nt" else "claude"
         result = subprocess.run(
-            ["claude", "--dangerously-skip-permissions", "-p", prompt],
+            [_claude, "--dangerously-skip-permissions", "-p", prompt],
             capture_output=True,
             text=True,
+            encoding="utf-8",
             timeout=120,
         )
 

@@ -131,16 +131,22 @@ class UnifiedEnhancer:
 
     def _check_claude_cli(self) -> bool:
         """Check if Claude Code CLI is available."""
-        try:
-            result = subprocess.run(
-                ["claude", "--version"],
-                capture_output=True,
-                text=True,
-                timeout=5,
-            )
-            return result.returncode == 0
-        except (FileNotFoundError, subprocess.TimeoutExpired):
-            return False
+        candidates = ["claude", "claude.cmd"] if os.name == "nt" else ["claude"]
+        for cmd in candidates:
+            try:
+                result = subprocess.run(
+                    [cmd, "--version"],
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    timeout=5,
+                )
+                if result.returncode == 0:
+                    self._claude_cmd = cmd
+                    return True
+            except (FileNotFoundError, subprocess.TimeoutExpired):
+                continue
+        return False
 
     def enhance(
         self,
@@ -302,15 +308,16 @@ class UnifiedEnhancer:
 
                 # Write prompt to file
                 prompt_file = temp_path / "prompt.txt"
-                prompt_file.write_text(prompt)
+                prompt_file.write_text(prompt, encoding="utf-8")
 
                 # Output file
                 output_file = temp_path / "response.json"
 
                 # Call Claude CLI
+                _claude = getattr(self, "_claude_cmd", "claude.cmd" if os.name == "nt" else "claude")
                 result = subprocess.run(
                     [
-                        "claude",
+                        _claude,
                         str(prompt_file),
                         "--output",
                         str(output_file),
@@ -319,6 +326,7 @@ class UnifiedEnhancer:
                     ],
                     capture_output=True,
                     text=True,
+                    encoding="utf-8",
                     timeout=120,
                     cwd=str(temp_path),
                 )

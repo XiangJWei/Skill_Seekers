@@ -391,10 +391,12 @@ DO NOT explain your work - just write the JSON file directly.
             logger.info(f"   Running: claude --dangerously-skip-permissions {prompt_file.name}")
             logger.info(f"   Output expected at: {output_file}")
 
+            _claude = "claude.cmd" if os.name == "nt" else "claude"
             result = subprocess.run(
-                ["claude", "--dangerously-skip-permissions", str(prompt_file)],
+                [_claude, "--dangerously-skip-permissions", str(prompt_file)],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
                 timeout=300,  # 5 minute timeout
                 cwd=str(working_dir),
             )
